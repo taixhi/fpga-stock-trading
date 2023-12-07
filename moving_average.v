@@ -1,40 +1,48 @@
-module moving_average (
-    input clk,                      // Clock signal
-    input reset,                    // Reset signal
-    input [7:0] in_data,            // 8-bit input data
-    output reg [7:0] out_avg        // 8-bit output average
+module moving_average_filter(
+    input clk,
+    input [7:0] rpi_gpio_tri_io,
+    output reg [7:0] rpi_gpio_tri_io_o
 );
 
-// Parameters
-localparam integer DATA_WIDTH = 8;
-localparam integer NUM_DAYS = 8;
+// Define the window size for the moving average
+//localparam WINDOW_SIZE = 4;
 
-// Registers
-reg [DATA_WIDTH-1:0] data_array[NUM_DAYS-1:0]; // Array to store the last 8 values
-reg [10:0] sum = 0;                            // Sum of the last 8 values (11 bits for up to 2040 max sum)
+// Declare a register array to store the samples
+//reg [7:0] samples[WINDOW_SIZE-1:0];
 
-integer i;
+// Declare a variable for the sum
+//reg [7:0] prev = 8'b00000000;  // 10 bits to handle overflow
+//reg [7:0] first;
+//reg [7:0] second;
+//integer i;
 
-// Load new data and calculate sum
-always @(posedge clk or posedge reset) begin
-    if (reset) begin
-        // Reset logic
-        sum <= 0;
-        for (i = 0; i < NUM_DAYS; i = i + 1) begin
-            data_array[i] <= 0;
-        end
-    end else begin
-        // Shift the data array and add new data
-        sum <= sum - data_array[NUM_DAYS-1] + in_data;
-        for (i = NUM_DAYS-1; i > 0; i = i - 1) begin
-            data_array[i] <= data_array[i-1];
-        end
-        data_array[0] <= in_data;
+reg [9:0] sum;
+reg [7:0] prev;
+reg [7:0] prev2;
+reg [7:0] prev3;
+reg [7:0] prev4;
 
-        // Calculate moving average
-        // Note: Right shift by 3 (equivalent to dividing by 8) for the average
-        out_avg <= sum >> 3;
-    end
-end
+initial sum = 0;
+initial prev = 0;
+initial prev2 = 0;
+initial prev3 = 0;
+initial prev4 = 0;
 
+//// working code 
+//always @(posedge clk) begin
+//    rpi_gpio_tri_io_o = (prev + rpi_gpio_tri_io) / 2;
+//end 
+//always @(posedge clk) begin
+//    prev = rpi_gpio_tri_io;  
+//end
+////endmodule
+
+always @(posedge clk) begin
+    sum = sum - prev + rpi_gpio_tri_io;
+    prev = prev2;
+    prev2 = prev3;
+    prev3 = prev4;
+    prev4 = rpi_gpio_tri_io;
+    rpi_gpio_tri_io_o = sum / 4;
+end 
 endmodule
